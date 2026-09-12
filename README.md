@@ -58,3 +58,61 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
 # absen_mhc
+
+## MHC Event Attendance
+
+Sistem pendaftaran dan absensi event Metal Health Community menggunakan Laravel 12 dan Filament 5.
+
+### Menjalankan project
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan storage:link
+npm install
+npm run build
+php artisan db:seed
+php artisan serve
+```
+
+Panel admin tersedia di `/admin`.
+
+Akun admin development:
+
+```text
+Email: admin@mail.com
+Password: admin
+```
+
+Seeder juga membuat akun test `test@example.com` dengan password `password`.
+
+### Gmail SMTP
+
+Isi konfigurasi berikut pada `.env` menggunakan akun Gmail pengirim dan Gmail App Password:
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-mhc-gmail@gmail.com
+MAIL_PASSWORD=your-gmail-app-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=your-mhc-gmail@gmail.com
+MAIL_FROM_NAME="MHC Community"
+```
+
+Jangan gunakan password utama Gmail dan jangan commit `.env` ke repository.
+
+### Dokumentasi produk
+
+- [PRD](docs/PRD.md)
+- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md)
+
+### Verifikasi
+
+```bash
+php artisan test
+npm run build
+```

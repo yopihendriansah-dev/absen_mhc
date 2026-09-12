@@ -1,0 +1,32 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer components {
+    .field-label { @apply mb-1.5 block text-sm font-medium text-[#255b70]; }
+    .field-input { @apply w-full rounded-xl border border-[#cfe7e1] bg-white px-3 py-3 text-sm text-[#174d67] outline-none transition placeholder:text-[#8aa6ad] focus:border-[#20a88d] focus:ring-2 focus:ring-[#20a88d]/15; }
+    .field-error { @apply mt-1 text-xs text-red-600; }
+    .event-description { @apply max-w-3xl text-base leading-8; }
+    .event-description > :first-child { @apply mt-0; }
+    .event-description > :last-child { @apply mb-0; }
+    .event-description p { @apply mb-5; }
+    .event-description h2 { @apply mb-4 mt-8 text-xl font-bold leading-tight text-[#104b68]; }
+    .event-description h3 { @apply mb-3 mt-6 text-lg font-semibold leading-tight text-[#104b68]; }
+    .event-description ul { @apply mb-5 list-disc space-y-2 pl-6; }
+    .event-description ol { @apply mb-5 list-decimal space-y-2 pl-6; }
+    .event-description blockquote { @apply my-6 border-l-4 border-[#9edacc] pl-4 italic text-[#5d7d86]; }
+    .event-description a { @apply font-semibold text-[#159b83] underline underline-offset-2; }
+    .event-description strong { @apply font-semibold text-[#255b70]; }
+    .event-description em { @apply italic; }
+    .event-description s { @apply line-through; }
+    .event-description hr { @apply my-8 border-[#d7eee8]; }
+    .event-description code { @apply rounded bg-[#eef8f5] px-1.5 py-0.5 text-sm text-[#104b68]; }
+}
