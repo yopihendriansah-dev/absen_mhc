@@ -24,7 +24,15 @@ class EventsTable
                     ->alignCenter(),
                 TextColumn::make('name')->label('Event')->searchable()->sortable()->wrap(),
                 TextColumn::make('event_date')->label('Tanggal')->date('d M Y')->sortable(),
-                TextColumn::make('status')->label('Status')->badge(),
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        Event::STATUS_DRAFT => 'Draft',
+                        Event::STATUS_PUBLISHED => 'Published',
+                        Event::STATUS_CLOSED => 'Closed',
+                        default => ucfirst((string) $state),
+                    }),
                 TextColumn::make('capacity')->label('Kapasitas')->state(fn (Event $record): string => $record->capacity_type === Event::CAPACITY_UNLIMITED ? 'Unlimited' : (string) $record->capacity),
                 TextColumn::make('registrations_count')->label('Peserta')->counts('registrations')->sortable(),
                 TextColumn::make('registration_link')
@@ -43,8 +51,6 @@ class EventsTable
                     Event::STATUS_DRAFT => 'Draft',
                     Event::STATUS_PUBLISHED => 'Published',
                     Event::STATUS_CLOSED => 'Closed',
-                    Event::STATUS_COMPLETED => 'Completed',
-                    Event::STATUS_CANCELLED => 'Cancelled',
                 ]),
             ])
             ->recordActions([

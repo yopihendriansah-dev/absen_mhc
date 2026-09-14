@@ -148,6 +148,28 @@ document.addEventListener('DOMContentLoaded', () => {
         showStatus(fallbackMessage, fallbackType);
     };
 
+    const showLoading = (title = 'Memuat data peserta', text = 'Mohon tunggu sebentar.') => {
+        status.classList.add('hidden');
+
+        if (window.Swal) {
+            window.Swal.fire({
+                title,
+                text,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                background: '#ffffff',
+                color: '#104b68',
+                customClass: { popup: 'mhc-alert-popup' },
+                didOpen: () => window.Swal.showLoading(),
+            });
+
+            return;
+        }
+
+        showStatus(text, 'info');
+    };
+
     const updateControls = () => {
         startButton.disabled = isScanning;
         stopButton.disabled = !isScanning;
@@ -204,7 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        showStatus('Memproses check-in...', 'info');
+        showLoading(
+            method === 'qr_code' ? 'Memproses QR Code' : 'Memuat data peserta',
+            'Sedang mencocokkan data registrasi.'
+        );
         const response = await fetch(@json(route('check-in.store')), {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': @json(csrf_token())},
@@ -217,10 +242,13 @@ document.addEventListener('DOMContentLoaded', () => {
         isSubmitting = false;
     };
 
-    const startScanner = async () => {
+    const startScanner = async (showCameraAlert = true) => {
         if (isScanning) return;
         if (typeof Html5Qrcode === 'undefined') {
-            showStatus('Scanner belum siap. Periksa koneksi internet atau gunakan input manual.');
+            if (showCameraAlert) {
+                showError('Scanner belum siap. Periksa koneksi internet atau gunakan input manual.', 'Scanner belum siap');
+            }
+
             return;
         }
         scanner ??= new Html5Qrcode('reader');
@@ -243,7 +271,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateControls();
         } catch (error) {
             cameraStatus.textContent = 'Kamera tidak dapat digunakan.';
-            showError('Kamera tidak dapat digunakan. Pastikan izin kamera diberikan, lalu gunakan input manual jika diperlukan.', 'Kamera tidak tersedia');
+            if (showCameraAlert) {
+                showError('Kamera tidak dapat digunakan. Pastikan izin kamera diberikan, lalu gunakan input manual jika diperlukan.', 'Kamera tidak tersedia');
+            }
             isScanning = false;
             updateControls();
         }
@@ -264,10 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    startButton.addEventListener('click', startScanner);
+    startButton.addEventListener('click', () => startScanner(true));
     stopButton.addEventListener('click', stopScanner);
     updateControls();
-    setTimeout(startScanner, 300);
+    setTimeout(() => startScanner(false), 300);
 
     @if (session('success'))
         showSuccess(@json(session('success')));

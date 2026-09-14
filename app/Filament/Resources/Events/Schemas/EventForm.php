@@ -68,8 +68,6 @@ class EventForm
                         Event::STATUS_DRAFT => 'Draft',
                         Event::STATUS_PUBLISHED => 'Published',
                         Event::STATUS_CLOSED => 'Closed',
-                        Event::STATUS_COMPLETED => 'Completed',
-                        Event::STATUS_CANCELLED => 'Cancelled',
                     ])
                     ->default(Event::STATUS_DRAFT)
                     ->required(),

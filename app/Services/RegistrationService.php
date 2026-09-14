@@ -15,7 +15,7 @@ class RegistrationService
         return DB::transaction(function () use ($event, $data): Registration {
             $event = Event::query()->lockForUpdate()->findOrFail($event->id);
 
-            if ($event->status !== Event::STATUS_PUBLISHED) {
+            if ($event->status !== Event::STATUS_PUBLISHED || $event->isEnded()) {
                 throw ValidationException::withMessages([
                     'event' => 'Pendaftaran untuk event ini sudah tidak tersedia.',
                 ]);

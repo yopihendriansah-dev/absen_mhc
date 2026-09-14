@@ -23,12 +23,6 @@ class CheckInService
             ]);
         }
 
-        if ($registration->event->status === 'cancelled') {
-            throw ValidationException::withMessages([
-                'code' => 'Event ini dibatalkan.',
-            ]);
-        }
-
         if ($registration->attendance()->exists()) {
             throw ValidationException::withMessages([
                 'code' => 'Peserta sudah melakukan check-in sebelumnya.',

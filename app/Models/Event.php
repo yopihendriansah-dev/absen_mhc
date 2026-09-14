@@ -16,8 +16,6 @@ class Event extends Model implements HasMedia
     public const STATUS_DRAFT = 'draft';
     public const STATUS_PUBLISHED = 'published';
     public const STATUS_CLOSED = 'closed';
-    public const STATUS_COMPLETED = 'completed';
-    public const STATUS_CANCELLED = 'cancelled';
 
     public const CAPACITY_LIMITED = 'limited';
     public const CAPACITY_UNLIMITED = 'unlimited';
@@ -65,5 +63,22 @@ class Event extends Model implements HasMedia
     {
         return $this->capacity_type === self::CAPACITY_UNLIMITED
             || $this->registrations()->where('status', 'registered')->count() < (int) $this->capacity;
+    }
+
+    public function isEnded(): bool
+    {
+        return $this->event_date?->isPast() && ! $this->event_date?->isToday();
+    }
+
+    public function isPubliclyVisible(): bool
+    {
+        return in_array($this->status, [self::STATUS_PUBLISHED, self::STATUS_CLOSED], true);
+    }
+
+    public function isRegistrationOpen(): bool
+    {
+        return $this->status === self::STATUS_PUBLISHED
+            && ! $this->isEnded()
+            && $this->hasAvailableCapacity();
     }
 }

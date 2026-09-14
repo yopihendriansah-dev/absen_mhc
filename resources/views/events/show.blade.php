@@ -7,7 +7,16 @@
     @php
         $registeredCount = $event->registrations()->where('status', 'registered')->count();
         $isFull = $event->capacity_type === 'limited' && $registeredCount >= (int) $event->capacity;
+        $isClosed = $event->status === \App\Models\Event::STATUS_CLOSED;
+        $isEnded = $event->isEnded();
+        $isRegistrationOpen = ! $isClosed && ! $isEnded && ! $isFull;
         $remainingSeats = $event->capacity_type === 'limited' ? max((int) $event->capacity - $registeredCount, 0) : null;
+        $statusBadge = match (true) {
+            $isClosed => ['label' => 'Event close', 'class' => 'bg-slate-100 text-slate-600'],
+            $isEnded => ['label' => 'Sudah berakhir', 'class' => 'bg-amber-50 text-amber-700'],
+            $isFull => ['label' => 'Pendaftaran penuh', 'class' => 'bg-red-50 text-red-700'],
+            default => ['label' => 'Tersedia', 'class' => 'bg-[#e8f8f3] text-[#159b83]'],
+        };
         $descriptionHtml = trim($event->description) === strip_tags($event->description)
             ? nl2br(e($event->description))
             : $event->description;
@@ -33,6 +42,7 @@
                 <div class="p-6 sm:p-8 lg:p-10">
                     <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#159b83]">{{ $event->event_date->translatedFormat('d F Y') }}</p>
                     <h1 class="event-title mt-3 max-w-3xl text-2xl font-bold leading-[1.12] text-[#104b68] sm:text-3xl lg:text-[30px]">{{ $event->name }}</h1>
+                    <span class="mt-4 inline-flex rounded-full px-3 py-1 text-xs font-bold {{ $statusBadge['class'] }}">{{ $statusBadge['label'] }}</span>
 
                     <div class="mt-7 space-y-5 text-sm leading-6 text-[#356b78]">
                         <p class="flex items-start gap-3"><x-heroicon-o-clock class="mt-1 h-5 w-5 shrink-0 text-[#159b83]" /><span><span class="text-[#7a9a9d]">Waktu</span><br>{{ substr($event->start_time, 0, 5) }}{{ $event->end_time ? ' – '.substr($event->end_time, 0, 5) : '' }} WIB</span></p>
@@ -40,7 +50,11 @@
                     </div>
 
                     <div class="mt-2 flex items-center border-t border-[#e4f1ee] pt-5 text-sm">
-                        @if ($event->capacity_type === 'limited')
+                        @if ($isClosed)
+                            <p class="flex items-center gap-2 text-slate-600"><x-heroicon-o-lock-closed class="h-5 w-5 text-slate-500" />Pendaftaran sudah ditutup</p>
+                        @elseif ($isEnded)
+                            <p class="flex items-center gap-2 text-amber-700"><x-heroicon-o-calendar-days class="h-5 w-5 text-amber-600" />Event sudah berakhir</p>
+                        @elseif ($event->capacity_type === 'limited')
                             <p class="flex items-center gap-2 {{ $isFull ? 'text-red-600' : 'text-[#5d7d86]' }}"><x-heroicon-o-user-group class="h-5 w-5 {{ $isFull ? 'text-red-500' : 'text-[#159b83]' }}" />{{ $isFull ? 'Pendaftaran penuh' : 'Tersisa '.number_format($remainingSeats).' kursi dari '.number_format($event->capacity) }}</p>
                         @else
                             <p class="flex items-center gap-2 text-[#5d7d86]"><x-heroicon-o-user-group class="h-5 w-5 text-[#159b83]" />Pendaftaran terbuka</p>
@@ -76,8 +90,16 @@
                     </div>
                 </div>
 
-                @if ($isFull)
-                    <div class="mt-6 rounded-2xl bg-red-50 p-4 text-sm leading-6 text-red-700">Pendaftaran untuk event ini sudah penuh.</div>
+                @if (! $isRegistrationOpen)
+                    <div class="mt-6 rounded-2xl {{ $isFull ? 'bg-red-50 text-red-700' : 'bg-slate-50 text-slate-600' }} p-4 text-sm leading-6">
+                        @if ($isClosed)
+                            Pendaftaran untuk event ini sudah ditutup.
+                        @elseif ($isFull)
+                            Pendaftaran untuk event ini sudah penuh.
+                        @else
+                            Event ini sudah berakhir dan disimpan sebagai history komunitas.
+                        @endif
+                    </div>
                 @else
                     <p class="mt-5 text-sm leading-6 text-[#5d7d86]">Isi data berikut untuk mendaftar. Pastikan email yang digunakan aktif karena undangan dan QR Code akan dikirim melalui email admin.</p>
                     @if ($errors->has('event'))
@@ -103,7 +125,7 @@
     </div>
 </section>
 
-@if (! $isFull)
+@if ($isRegistrationOpen)
     <div class="fixed inset-x-0 bottom-0 z-40 border-t border-[#cfe7e1] bg-white/95 p-3 shadow-[0_-6px_20px_rgba(16,75,104,0.08)] backdrop-blur lg:hidden">
         <a href="{{ route('events.register', $event) }}" class="flex w-full items-center justify-center gap-2 rounded-xl bg-[#159b83] px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#0f826f]"><x-heroicon-o-calendar-days class="h-5 w-5" /> Daftar event</a>
     </div>
