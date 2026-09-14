@@ -21,8 +21,7 @@
                 };
             @endphp
             <a href="{{ route('events.show', $event) }}" class="group overflow-hidden rounded-2xl border border-[#d7eee8] bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#20a88d] hover:shadow-lg">
-                <div class="relative aspect-[4/5] bg-[#e8f6f2]">
-                    <span class="absolute left-4 top-4 z-10 rounded-full px-3 py-1 text-xs font-bold shadow-sm {{ $badge['class'] }}">{{ $badge['label'] }}</span>
+                <div class="aspect-[4/5] bg-[#e8f6f2]">
                     @if ($poster = $event->getFirstMediaUrl('event-posters', 'thumbnail'))
                         <img src="{{ $poster }}" alt="Poster {{ $event->name }}" class="h-full w-full object-contain">
                     @else
@@ -30,7 +29,10 @@
                     @endif
                 </div>
                 <div class="p-5">
-                    <p class="flex items-center gap-2 text-sm text-[#159b83]"><x-heroicon-o-calendar-days class="h-4 w-4" /> {{ $event->event_date->translatedFormat('d F Y') }}</p>
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="flex min-w-0 items-center gap-2 text-sm text-[#159b83]"><x-heroicon-o-calendar-days class="h-4 w-4 shrink-0" /> <span class="truncate">{{ $event->event_date->translatedFormat('d F Y') }}</span></p>
+                        <span class="shrink-0 rounded-full px-3 py-1 text-xs font-bold {{ $badge['class'] }}">{{ $badge['label'] }}</span>
+                    </div>
                     <h2 class="mt-2 text-xl font-semibold text-[#104b68] group-hover:text-[#159b83]">{{ $event->name }}</h2>
                     <p class="mt-2 line-clamp-2 text-sm text-[#5d7d86]">{{ \Illuminate\Support\Str::of(strip_tags($event->description))->squish()->limit(140) }}</p>
                     <p class="mt-5 flex items-center gap-2 text-sm text-[#356b78]"><x-heroicon-o-map-pin class="h-4 w-4 shrink-0 text-[#159b83]" /> {{ $event->location_name }}</p>
