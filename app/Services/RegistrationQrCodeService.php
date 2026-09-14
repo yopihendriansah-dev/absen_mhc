@@ -3,7 +3,8 @@
 namespace App\Services;
 
 use App\Models\Registration;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use BaconQrCode\Common\ErrorCorrectionLevel;
+use BaconQrCode\Encoder\Encoder;
 
 class RegistrationQrCodeService
 {
@@ -11,19 +12,15 @@ class RegistrationQrCodeService
     {
         $registration->loadMissing('event');
 
-        $qrCode = QrCode::format('png')
-            ->size(360)
-            ->margin(1)
-            ->generate($registration->registration_code);
-
-        $qrImage = imagecreatefromstring($qrCode);
         $canvas = imagecreatetruecolor(420, 540);
         $white = imagecolorallocate($canvas, 255, 255, 255);
+        $black = imagecolorallocate($canvas, 17, 24, 39);
         $navy = imagecolorallocate($canvas, 16, 75, 104);
         $teal = imagecolorallocate($canvas, 21, 155, 131);
         $muted = imagecolorallocate($canvas, 93, 125, 134);
         imagefill($canvas, 0, 0, $white);
-        imagecopy($canvas, $qrImage, 30, 20, 0, 0, imagesx($qrImage), imagesy($qrImage));
+
+        $this->drawQrCode($canvas, $registration->registration_code, 30, 20, 360, $black);
 
         $font = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
         $boldFont = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
@@ -50,9 +47,39 @@ class RegistrationQrCodeService
         ob_start();
         imagepng($canvas);
         $image = ob_get_clean();
-        imagedestroy($qrImage);
         imagedestroy($canvas);
 
         return $image;
+    }
+
+    private function drawQrCode($canvas, string $content, int $left, int $top, int $size, int $darkColor): void
+    {
+        $matrix = Encoder::encode($content, ErrorCorrectionLevel::M())->getMatrix();
+        $margin = 1;
+        $modules = $matrix->getWidth() + ($margin * 2);
+        $moduleSize = max((int) floor($size / $modules), 1);
+        $qrSize = $modules * $moduleSize;
+        $offsetX = $left + (int) floor(($size - $qrSize) / 2);
+        $offsetY = $top + (int) floor(($size - $qrSize) / 2);
+
+        for ($y = 0; $y < $matrix->getHeight(); $y++) {
+            for ($x = 0; $x < $matrix->getWidth(); $x++) {
+                if ($matrix->get($x, $y) !== 1) {
+                    continue;
+                }
+
+                $moduleX = $offsetX + (($x + $margin) * $moduleSize);
+                $moduleY = $offsetY + (($y + $margin) * $moduleSize);
+
+                imagefilledrectangle(
+                    $canvas,
+                    $moduleX,
+                    $moduleY,
+                    $moduleX + $moduleSize - 1,
+                    $moduleY + $moduleSize - 1,
+                    $darkColor
+                );
+            }
+        }
     }
 }
