@@ -97,7 +97,7 @@
                         @elseif ($isFull)
                             Pendaftaran untuk event ini sudah penuh.
                         @else
-                            Event ini sudah berakhir dan disimpan sebagai history komunitas.
+                            Event ini sudah berakhir.
                         @endif
                     </div>
                 @else
