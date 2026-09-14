@@ -73,7 +73,7 @@
             <aside class="rounded-3xl border border-[#d7eee8] bg-[#e8f8f3] p-6 sm:p-8">
                 <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[#159b83]">Informasi penting</p>
                 <ul class="mt-4 space-y-3 text-sm leading-6 text-[#356b78]">
-                    <li class="flex gap-2"><x-heroicon-o-envelope class="mt-1 h-5 w-5 shrink-0 text-[#159b83]" /><span>Undangan dan QR Code dikirim melalui email admin.</span></li>
+                    <li class="flex gap-2"><x-heroicon-o-chat-bubble-left-right class="mt-1 h-5 w-5 shrink-0 text-[#159b83]" /><span>Undangan dan QR Code dikirim melalui WhatsApp admin.</span></li>
                     <li class="flex gap-2"><x-heroicon-o-qr-code class="mt-1 h-5 w-5 shrink-0 text-[#159b83]" /><span>Tunjukkan QR Code saat check-in di lokasi.</span></li>
                     <li class="flex gap-2"><x-heroicon-o-map-pin class="mt-1 h-5 w-5 shrink-0 text-[#159b83]" /><span>Pastikan detail lokasi sudah kamu cek sebelum datang.</span></li>
                 </ul>

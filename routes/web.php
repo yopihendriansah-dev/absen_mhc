@@ -15,6 +15,8 @@ Route::post('/events/{event:slug}/registrations', [RegistrationController::class
     ->name('registrations.store');
 Route::get('/registrations/{registration:registration_code}/success', [RegistrationController::class, 'success'])
     ->name('registrations.success');
+Route::get('/registrations/{registration:registration_code}/qr-code', [ExportController::class, 'registrationQrCode'])
+    ->name('registrations.qr-code');
 
 Route::middleware('auth')->prefix('check-in')->name('check-in.')->group(function (): void {
     Route::get('/', [CheckInController::class, 'index'])->name('index');

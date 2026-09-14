@@ -3,12 +3,11 @@
 namespace App\Filament\Resources\Registrations\Tables;
 
 use App\Models\Registration;
-use App\Services\InvitationService;
+use App\Services\WhatsAppInvitationUrlService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -65,18 +64,11 @@ class RegistrationsTable
                         ->label('Download QR Code')
                         ->icon('heroicon-m-qr-code')
                         ->url(fn (Registration $record): string => route('exports.registration-qr-code', $record)),
-                    Action::make('sendInvitation')
-                        ->label(fn (Registration $record): string => $record->invitation_status === Registration::INVITATION_SENT ? 'Kirim ulang' : 'Kirim undangan')
-                        ->icon('heroicon-m-envelope')
-                        ->requiresConfirmation()
-                        ->action(function (Registration $record, InvitationService $service): void {
-                            try {
-                                $service->send($record);
-                                Notification::make()->title('Undangan berhasil dikirim.')->success()->send();
-                            } catch (\Throwable $exception) {
-                                Notification::make()->title('Pengiriman undangan gagal.')->body($exception->getMessage())->danger()->send();
-                            }
-                        }),
+                    Action::make('sendWhatsAppInvitation')
+                        ->label('Kirim WhatsApp')
+                        ->icon('heroicon-m-chat-bubble-left-right')
+                        ->url(fn (Registration $record): string => app(WhatsAppInvitationUrlService::class)->make($record))
+                        ->openUrlInNewTab(),
                     EditAction::make(),
                 ]),
             ])
