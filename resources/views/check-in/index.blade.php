@@ -127,6 +127,29 @@ document.addEventListener('DOMContentLoaded', () => {
         stopButton.disabled = !isScanning;
     };
 
+    const showSuccess = (message, participant = null, event = null) => {
+        status.classList.add('hidden');
+
+        if (window.Swal) {
+            const detail = [participant, event].filter(Boolean).join(' &mdash; ');
+
+            window.Swal.fire({
+                icon: 'success',
+                title: 'Check-in berhasil',
+                text: detail || message,
+                confirmButtonText: 'Selesai',
+                confirmButtonColor: '#159b83',
+                background: '#ffffff',
+                color: '#104b68',
+                customClass: { popup: 'mhc-alert-popup', confirmButton: 'mhc-alert-button' },
+            });
+
+            return;
+        }
+
+        showStatus(message, 'success');
+    };
+
     const stopScanner = async () => {
         if (!scanner || !isScanning) return;
         try { await scanner.stop(); } catch (error) { /* Kamera mungkin sudah berhenti */ }
@@ -146,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.errors?.code?.[0] ?? data.message ?? 'Check-in gagal.');
-        showStatus(`${data.message} ${data.participant} — ${data.event}`, 'success');
+        showSuccess(data.message, data.participant, data.event);
         cameraStatus.textContent = 'Check-in berhasil. Siap untuk scan berikutnya.';
         isSubmitting = false;
     };
@@ -187,6 +210,10 @@ document.addEventListener('DOMContentLoaded', () => {
     stopButton.addEventListener('click', stopScanner);
     updateControls();
     setTimeout(startScanner, 300);
+
+    @if (session('success'))
+        showSuccess(@json(session('success')));
+    @endif
 });
 </script>
 @endsection
