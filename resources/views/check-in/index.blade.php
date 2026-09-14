@@ -111,6 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let isScanning = false;
     let isSubmitting = false;
 
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
     const showStatus = (message, type = 'error') => {
         const styles = {
             success: 'border-emerald-200 bg-emerald-50 text-emerald-700',
@@ -122,32 +129,60 @@ document.addEventListener('DOMContentLoaded', () => {
         status.classList.remove('hidden');
     };
 
+    const showAlert = (options, fallbackMessage, fallbackType = 'error') => {
+        status.classList.add('hidden');
+
+        if (window.Swal) {
+            window.Swal.fire({
+                confirmButtonText: 'Mengerti',
+                confirmButtonColor: '#159b83',
+                background: '#ffffff',
+                color: '#104b68',
+                customClass: { popup: 'mhc-alert-popup', confirmButton: 'mhc-alert-button' },
+                ...options,
+            });
+
+            return;
+        }
+
+        showStatus(fallbackMessage, fallbackType);
+    };
+
     const updateControls = () => {
         startButton.disabled = isScanning;
         stopButton.disabled = !isScanning;
     };
 
     const showSuccess = (message, participant = null, event = null) => {
-        status.classList.add('hidden');
+        const detail = participant || event
+            ? `<div style="text-align:left;line-height:1.6">
+                    ${participant ? `<p style="margin:0 0 8px"><strong>Peserta:</strong> ${escapeHtml(participant)}</p>` : ''}
+                    ${event ? `<p style="margin:0"><strong>Event:</strong> ${escapeHtml(event)}</p>` : ''}
+                </div>`
+            : escapeHtml(message);
 
-        if (window.Swal) {
-            const detail = [participant, event].filter(Boolean).join(' &mdash; ');
+        showAlert({
+            icon: 'success',
+            title: 'Check-in berhasil',
+            html: detail,
+            confirmButtonText: 'Selesai',
+        }, message, 'success');
+    };
 
-            window.Swal.fire({
-                icon: 'success',
-                title: 'Check-in berhasil',
-                text: detail || message,
-                confirmButtonText: 'Selesai',
-                confirmButtonColor: '#159b83',
-                background: '#ffffff',
-                color: '#104b68',
-                customClass: { popup: 'mhc-alert-popup', confirmButton: 'mhc-alert-button' },
-            });
+    const showError = (message, title = 'Check-in gagal') => {
+        showAlert({
+            icon: 'error',
+            title,
+            text: message,
+        }, message, 'error');
+    };
 
-            return;
-        }
-
-        showStatus(message, 'success');
+    const showWarning = (message, title = 'Periksa kembali') => {
+        showAlert({
+            icon: 'warning',
+            title,
+            text: message,
+        }, message, 'error');
     };
 
     const stopScanner = async () => {
@@ -158,14 +193,22 @@ document.addEventListener('DOMContentLoaded', () => {
         updateControls();
     };
 
-    const submitCode = async (code) => {
+    const submitCode = async (code, method = 'qr_code') => {
         if (isSubmitting) return;
         isSubmitting = true;
+        const normalizedCode = String(code ?? '').trim();
+
+        if (!normalizedCode) {
+            isSubmitting = false;
+            showWarning('Kode registrasi wajib diisi.');
+            return;
+        }
+
         showStatus('Memproses check-in...', 'info');
         const response = await fetch(@json(route('check-in.store')), {
             method: 'POST',
             headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': @json(csrf_token())},
-            body: JSON.stringify({code, method: 'qr_code'})
+            body: JSON.stringify({code: normalizedCode, method})
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.errors?.code?.[0] ?? data.message ?? 'Check-in gagal.');
@@ -191,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }},
                 async (text) => {
                     await stopScanner();
-                    try { await submitCode(text); } catch (error) { isSubmitting = false; showStatus(error.message); }
+                    try { await submitCode(text); } catch (error) { isSubmitting = false; showError(error.message); }
                 },
                 () => {}
             );
@@ -200,11 +243,26 @@ document.addEventListener('DOMContentLoaded', () => {
             updateControls();
         } catch (error) {
             cameraStatus.textContent = 'Kamera tidak dapat digunakan.';
-            showStatus('Kamera tidak dapat digunakan. Pastikan izin kamera diberikan, lalu gunakan input manual jika diperlukan.');
+            showError('Kamera tidak dapat digunakan. Pastikan izin kamera diberikan, lalu gunakan input manual jika diperlukan.', 'Kamera tidak tersedia');
             isScanning = false;
             updateControls();
         }
     };
+
+    document.getElementById('manual-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const form = event.currentTarget;
+        const code = form.querySelector('[name="code"]').value;
+
+        try {
+            await submitCode(code, 'manual');
+            form.reset();
+        } catch (error) {
+            isSubmitting = false;
+            showError(error.message);
+        }
+    });
 
     startButton.addEventListener('click', startScanner);
     stopButton.addEventListener('click', stopScanner);
