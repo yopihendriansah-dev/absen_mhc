@@ -52,7 +52,20 @@ class RegistrationResource extends Resource
                         TextEntry::make('event.name')->label('Event'),
                         TextEntry::make('registration_code')->label('Kode registrasi')->copyable(),
                         TextEntry::make('status')->label('Status pendaftaran')->badge(),
-                        TextEntry::make('invitation_status')->label('Status undangan')->badge(),
+                        TextEntry::make('email_invitation_status')
+                            ->label('Pengiriman email')
+                            ->badge()
+                            ->state(fn (Registration $record): ?string => match ($record->invitation_status) {
+                                Registration::INVITATION_SENT => 'Sudah dikirim via email',
+                                Registration::INVITATION_FAILED => 'Gagal dikirim via email',
+                                default => null,
+                            })
+                            ->placeholder('Belum dikirim'),
+                        TextEntry::make('whatsapp_invitation_status')
+                            ->label('Pengiriman WhatsApp')
+                            ->badge()
+                            ->state(fn (Registration $record): ?string => $record->whatsapp_invitation_sent_at ? 'Sudah dikirim via WhatsApp' : null)
+                            ->placeholder('Belum dikirim'),
                         TextEntry::make('created_at')->label('Tanggal daftar')->dateTime('d M Y H:i')->suffix(' WIB'),
                         TextEntry::make('attendance.checked_in_at')->label('Waktu check-in')->dateTime('d M Y H:i')->suffix(' WIB')->placeholder('Belum hadir'),
                     ]),

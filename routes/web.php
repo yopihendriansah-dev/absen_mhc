@@ -4,6 +4,7 @@ use App\Http\Controllers\CheckInController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\WhatsAppInvitationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [EventController::class, 'index'])->name('home');
@@ -28,4 +29,8 @@ Route::middleware('auth')->prefix('admin/exports')->name('exports.')->group(func
     Route::get('/events/{event}/registrations', [ExportController::class, 'registrations'])->name('registrations');
     Route::get('/events/{event}/attendances', [ExportController::class, 'attendances'])->name('attendances');
     Route::get('/registrations/{registration:registration_code}/qr-code', [ExportController::class, 'registrationQrCode'])->name('registration-qr-code');
+});
+
+Route::middleware('auth')->prefix('admin/invitations')->name('admin.invitations.')->group(function (): void {
+    Route::get('/registrations/{registration}/whatsapp', WhatsAppInvitationController::class)->name('whatsapp');
 });

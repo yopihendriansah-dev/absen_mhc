@@ -3,11 +3,12 @@
 namespace App\Filament\Resources\Registrations\Tables;
 
 use App\Models\Registration;
-use App\Services\WhatsAppInvitationUrlService;
+use App\Services\InvitationService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -27,11 +28,20 @@ class RegistrationsTable
                 TextColumn::make('phone')->label('WhatsApp')->toggleable(),
                 TextColumn::make('gender')->label('Jenis kelamin')->formatStateUsing(fn (?string $state): string => $state === 'male' ? 'Laki-laki' : 'Perempuan')->toggleable(),
                 TextColumn::make('status')->label('Pendaftaran')->badge()->formatStateUsing(fn (?string $state): string => $state === Registration::STATUS_REGISTERED ? 'Terdaftar' : 'Dibatalkan'),
-                TextColumn::make('invitation_status')->label('Undangan')->badge()->formatStateUsing(fn (?string $state): string => match ($state) {
-                    Registration::INVITATION_SENT => 'Terkirim',
-                    Registration::INVITATION_FAILED => 'Gagal',
-                    default => 'Pending',
-                }),
+                TextColumn::make('email_invitation_status')
+                    ->label('Pengiriman Email')
+                    ->badge()
+                    ->state(fn (Registration $record): ?string => match ($record->invitation_status) {
+                        Registration::INVITATION_SENT => 'Sudah dikirim via email',
+                        Registration::INVITATION_FAILED => 'Gagal dikirim via email',
+                        default => null,
+                    })
+                    ->placeholder(''),
+                TextColumn::make('whatsapp_invitation_sent_at')
+                    ->label('Pengiriman WhatsApp')
+                    ->badge()
+                    ->state(fn (Registration $record): ?string => $record->whatsapp_invitation_sent_at ? 'Sudah dikirim via WhatsApp' : null)
+                    ->placeholder(''),
                 TextColumn::make('attendance.checked_in_at')->label('Check-in')->dateTime('d M Y H:i')->suffix(' WIB')->placeholder('Belum hadir')->sortable(),
                 TextColumn::make('created_at')->label('Tanggal daftar')->dateTime('d M Y H:i')->suffix(' WIB')->sortable()->toggleable(),
             ])
@@ -67,8 +77,20 @@ class RegistrationsTable
                     Action::make('sendWhatsAppInvitation')
                         ->label('Kirim WhatsApp')
                         ->icon('heroicon-m-chat-bubble-left-right')
-                        ->url(fn (Registration $record): string => app(WhatsAppInvitationUrlService::class)->make($record))
+                        ->url(fn (Registration $record): string => route('admin.invitations.whatsapp', $record))
                         ->openUrlInNewTab(),
+                    Action::make('sendEmailInvitation')
+                        ->label(fn (Registration $record): string => $record->invitation_status === Registration::INVITATION_SENT ? 'Kirim ulang Email' : 'Kirim Email')
+                        ->icon('heroicon-m-envelope')
+                        ->requiresConfirmation()
+                        ->action(function (Registration $record, InvitationService $service): void {
+                            try {
+                                $service->send($record);
+                                Notification::make()->title('Undangan email berhasil dikirim.')->success()->send();
+                            } catch (\Throwable $exception) {
+                                Notification::make()->title('Pengiriman email gagal.')->body($exception->getMessage())->danger()->send();
+                            }
+                        }),
                     EditAction::make(),
                 ]),
             ])

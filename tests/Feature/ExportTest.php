@@ -63,6 +63,21 @@ class ExportTest extends TestCase
         $this->assertStringContainsString(rawurlencode(route('registrations.qr-code', $registration)), $url);
     }
 
+    public function test_admin_whatsapp_invitation_redirect_marks_registration_as_sent(): void
+    {
+        $admin = User::factory()->create();
+        $registration = $this->registration(['phone' => '0812 3456 7890']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.invitations.whatsapp', $registration))
+            ->assertRedirectContains('https://wa.me/6281234567890');
+
+        $registration->refresh();
+
+        $this->assertNotNull($registration->whatsapp_invitation_sent_at);
+        $this->assertSame(1, $registration->whatsapp_invitation_send_count);
+    }
+
     private function registration(array $overrides = []): Registration
     {
         $event = Event::create([

@@ -33,6 +33,8 @@ class Registration extends Model
         'invitation_status',
         'invitation_sent_at',
         'invitation_send_count',
+        'whatsapp_invitation_sent_at',
+        'whatsapp_invitation_send_count',
         'last_invitation_error',
     ];
 
@@ -42,6 +44,8 @@ class Registration extends Model
             'data_consent_at' => 'datetime',
             'invitation_sent_at' => 'datetime',
             'invitation_send_count' => 'integer',
+            'whatsapp_invitation_sent_at' => 'datetime',
+            'whatsapp_invitation_send_count' => 'integer',
         ];
     }
 
