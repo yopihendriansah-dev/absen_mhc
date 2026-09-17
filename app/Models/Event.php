@@ -56,7 +56,7 @@ class Event extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        $this->addMediaConversion('thumbnail')->width(640)->height(360)->nonQueued();
+        $this->addMediaConversion('thumbnail')->width(800)->height(1000)->nonQueued();
     }
 
     public function hasAvailableCapacity(): bool

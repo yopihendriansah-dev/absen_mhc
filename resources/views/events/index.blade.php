@@ -22,8 +22,8 @@
             @endphp
             <a href="{{ route('events.show', $event) }}" class="group overflow-hidden rounded-2xl border border-[#d7eee8] bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#20a88d] hover:shadow-lg">
                 <div class="aspect-[4/5] bg-[#e8f6f2]">
-                    @if ($poster = $event->getFirstMediaUrl('event-posters', 'thumbnail'))
-                        <img src="{{ $poster }}" alt="Poster {{ $event->name }}" class="h-full w-full object-contain">
+                    @if ($poster = $event->getFirstMediaUrl('event-posters'))
+                        <img src="{{ $poster }}" alt="Poster {{ $event->name }}" class="h-full w-full object-contain" loading="lazy" decoding="async">
                     @else
                         <div class="flex h-full items-center justify-center text-sm text-[#7a9a9d]">Poster event</div>
                     @endif
