@@ -83,4 +83,38 @@ class ExampleTest extends TestCase
 
         $this->get(route('events.register', $event))->assertNotFound();
     }
+
+    public function test_public_index_orders_events_from_newest_to_oldest_and_can_search(): void
+    {
+        Event::create([
+            'name' => 'Event Lama',
+            'slug' => 'event-lama',
+            'event_date' => today()->subDays(3),
+            'start_time' => '10:00',
+            'description' => 'Diskusi lama.',
+            'location_name' => 'Ruang Lama',
+            'capacity_type' => Event::CAPACITY_UNLIMITED,
+            'status' => Event::STATUS_PUBLISHED,
+        ]);
+
+        Event::create([
+            'name' => 'Event Baru',
+            'slug' => 'event-baru',
+            'event_date' => today()->addDays(2),
+            'start_time' => '10:00',
+            'description' => 'Diskusi baru.',
+            'location_name' => 'Ruang Baru',
+            'capacity_type' => Event::CAPACITY_UNLIMITED,
+            'status' => Event::STATUS_PUBLISHED,
+        ]);
+
+        $this->get(route('events.index'))
+            ->assertOk()
+            ->assertSeeInOrder(['Event Baru', 'Event Lama']);
+
+        $this->get(route('events.index', ['search' => 'Lama']))
+            ->assertOk()
+            ->assertSee('Event Lama')
+            ->assertDontSee('Event Baru');
+    }
 }

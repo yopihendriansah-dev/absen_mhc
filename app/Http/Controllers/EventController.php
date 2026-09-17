@@ -4,21 +4,33 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Registration;
+use Illuminate\Http\Request;
 
 class EventController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $search = trim((string) $request->query('search'));
+
         $events = Event::query()
             ->whereIn('status', [Event::STATUS_PUBLISHED, Event::STATUS_CLOSED])
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('description', 'like', '%'.$search.'%')
+                        ->orWhere('location_name', 'like', '%'.$search.'%')
+                        ->orWhere('location_address', 'like', '%'.$search.'%');
+                });
+            })
             ->withCount([
                 'registrations as registered_registrations_count' => fn ($query) => $query->where('status', Registration::STATUS_REGISTERED),
             ])
-            ->orderByRaw('event_date >= ? desc', [today()->toDateString()])
-            ->orderBy('event_date')
-            ->paginate(9);
+            ->latest('event_date')
+            ->latest('id')
+            ->paginate(9)
+            ->withQueryString();
 
-        return view('events.index', compact('events'));
+        return view('events.index', compact('events', 'search'));
     }
 
     public function show(Event $event)

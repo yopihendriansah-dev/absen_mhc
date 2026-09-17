@@ -131,6 +131,8 @@
     </div>
 @endif
 
+<x-public.whatsapp-floating-button :event="$event" />
+
 @if (isset($poster) && $poster)
     <dialog id="poster-viewer" class="poster-viewer m-auto max-h-[92vh] max-w-[min(94vw,1100px)] overflow-auto rounded-2xl border border-white/20 bg-[#104b68]/95 p-2 text-white shadow-2xl backdrop:bg-[#104b68]/70">
         <div class="relative">
