@@ -10,6 +10,12 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class MhcStatsOverview extends StatsOverviewWidget
 {
+    protected array|int|null $columns = [
+        'default' => 1,
+        'md' => 2,
+        'lg' => 3,
+    ];
+
     protected function getStats(): array
     {
         return [
