@@ -8,6 +8,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class PageViewStats extends StatsOverviewWidget
 {
+    protected static ?int $sort = 2;
     protected array|int|null $columns = [
         'default' => 1,
         'md' => 2,
