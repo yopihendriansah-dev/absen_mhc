@@ -73,11 +73,19 @@ class EventForm
                     ->required(),
                 SpatieMediaLibraryFileUpload::make('poster')
                     ->label('Poster event')
-                    ->helperText('Rekomendasi format Instagram portrait 4:5, ukuran 1080 × 1350 px.')
+                    ->helperText('Tampil di halaman web. Rekomendasi format Instagram portrait 4:5, ukuran 1080 × 1350 px.')
                     ->collection('event-posters')
                     ->image()
                     ->maxSize(2048)
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                    ->columnSpanFull(),
+                SpatieMediaLibraryFileUpload::make('og_image')
+                    ->label('Gambar preview WhatsApp')
+                    ->helperText('Wajib landscape 1200 × 630 px (rasio 1.91:1), JPG/PNG, maks 2 MB. Dipakai khusus preview link WhatsApp/Telegram/FB. Kalau kosong, otomatis pakai poster event.')
+                    ->collection('event-og-images')
+                    ->image()
+                    ->maxSize(2048)
+                    ->acceptedFileTypes(['image/jpeg', 'image/png'])
                     ->columnSpanFull(),
             ]);
     }

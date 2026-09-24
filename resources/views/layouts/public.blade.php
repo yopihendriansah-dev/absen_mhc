@@ -11,6 +11,10 @@
     <meta property="og:title" content="{{ $ogTitle ?? ($title ?? 'MHC Community') }}">
     <meta property="og:description" content="{{ $ogDescription ?? ($metaDescription ?? 'Mental Health Community Priangan Timur — temukan event dan pendaftaran komunitas.') }}">
     <meta property="og:image" content="{{ $ogImage ?? asset('images/logo-mhc.jpg') }}">
+    @if (! empty($ogImageWidth) && ! empty($ogImageHeight))
+        <meta property="og:image:width" content="{{ $ogImageWidth }}">
+        <meta property="og:image:height" content="{{ $ogImageHeight }}">
+    @endif
     <meta property="og:url" content="{{ $ogUrl ?? url()->current() }}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $ogTitle ?? ($title ?? 'MHC Community') }}">
