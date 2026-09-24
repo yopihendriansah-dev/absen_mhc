@@ -25,6 +25,9 @@
     <div class="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div class="space-y-8">
             <article class="overflow-hidden rounded-3xl border border-[#d7eee8] bg-white shadow-sm">
+                <div class="p-6 sm:p-8 lg:px-10 lg:pt-8 lg:pb-6">
+                    <h1 class="event-title max-w-4xl text-2xl font-bold leading-[1.12] text-[#104b68] sm:text-3xl lg:text-4xl">{{ $event->name }}</h1>
+                </div>
                 <div class="grid items-start md:grid-cols-[minmax(240px,420px)_minmax(0,1fr)]">
                 <div class="p-4 md:p-6">
                     <div class="mx-auto aspect-[4/5] w-full max-w-[480px] overflow-hidden rounded-2xl bg-[#e8f8f3] md:mx-0 md:max-w-none">
@@ -39,17 +42,15 @@
                     </div>
                 </div>
 
-                <div class="p-6 sm:p-8 lg:p-10">
+                <div class="p-6 sm:p-8 lg:p-10 lg:pl-4">
                     <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[#159b83]">{{ $event->event_date->translatedFormat('d F Y') }}</p>
-                    <h1 class="event-title mt-3 max-w-3xl text-2xl font-bold leading-[1.12] text-[#104b68] sm:text-3xl lg:text-[30px]">{{ $event->name }}</h1>
-                    <span class="mt-4 inline-flex rounded-full px-3 py-1 text-xs font-bold {{ $statusBadge['class'] }}">{{ $statusBadge['label'] }}</span>
-
-                    <div class="mt-7 space-y-5 text-sm leading-6 text-[#356b78]">
+                    <span class="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-bold {{ $statusBadge['class'] }}">{{ $statusBadge['label'] }}</span>
+                    <div class="mt-6 space-y-5 text-sm leading-6 text-[#356b78]">
                         <p class="flex items-start gap-3"><x-heroicon-o-clock class="mt-1 h-5 w-5 shrink-0 text-[#159b83]" /><span><span class="text-[#7a9a9d]">Waktu</span><br>{{ substr($event->start_time, 0, 5) }}{{ $event->end_time ? ' – '.substr($event->end_time, 0, 5) : '' }} WIB</span></p>
                         <p class="flex items-start gap-3"><x-heroicon-o-map-pin class="mt-1 h-5 w-5 shrink-0 text-[#159b83]" /><span><span class="text-[#7a9a9d]">Lokasi</span><br>{{ $event->location_name }}@if ($event->location_address)<br>{{ $event->location_address }}@endif @if ($event->google_maps_url)<br><a class="mt-2 inline-flex items-center gap-1 font-semibold text-[#159b83] hover:underline" href="{{ $event->google_maps_url }}" target="_blank" rel="noopener">Buka Google Maps <x-heroicon-o-arrow-up-right class="h-4 w-4" /></a>@endif</span></p>
                     </div>
 
-                    <div class="mt-2 flex items-center border-t border-[#e4f1ee] pt-5 text-sm">
+                    <div class="mt-6 flex items-center pt-1 text-sm">
                         @if ($isClosed)
                             <p class="flex items-center gap-2 text-slate-600"><x-heroicon-o-lock-closed class="h-5 w-5 text-slate-500" />Pendaftaran sudah ditutup</p>
                         @elseif ($isEnded)
