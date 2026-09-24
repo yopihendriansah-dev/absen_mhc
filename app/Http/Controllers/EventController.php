@@ -37,7 +37,22 @@ class EventController extends Controller
     {
         abort_unless($event->isPubliclyVisible(), 404);
 
-        return view('events.show', compact('event'));
+        // Open Graph untuk preview link WhatsApp/Telegram/FB.
+        // Gambar = poster asli apa adanya (tanpa crop), fallback ke logo.
+        $posterUrl = $event->getFirstMediaUrl('event-posters') ?: asset('images/logo-mhc.jpg');
+        $plainDescription = \Illuminate\Support\Str::of(strip_tags($event->description ?? ''))->squish()->limit(160)->toString();
+        $eventDate = $event->event_date ? $event->event_date->translatedFormat('d F Y') : null;
+
+        return view('events.show', [
+            'event' => $event,
+            'title' => $event->name.' — MHC Community',
+            'metaDescription' => $plainDescription !== '' ? $plainDescription : $event->name.($eventDate ? ' — '.$eventDate : ''),
+            'ogType' => 'article',
+            'ogTitle' => $event->name,
+            'ogDescription' => $plainDescription !== '' ? $plainDescription : $event->name.($eventDate ? ' — '.$eventDate : ''),
+            'ogImage' => $posterUrl,
+            'ogUrl' => route('events.show', $event),
+        ]);
     }
 
     public function register(Event $event)

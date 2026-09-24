@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'MHC Community' }}</title>
+    <meta name="description" content="{{ $metaDescription ?? 'Mental Health Community Priangan Timur — temukan event dan pendaftaran komunitas.' }}">
+    {{-- Open Graph default (fallback). Halaman detail event menimpa via @push('meta'). --}}
+    <meta property="og:site_name" content="MHC Community">
+    <meta property="og:type" content="{{ $ogType ?? 'website' }}">
+    <meta property="og:title" content="{{ $ogTitle ?? ($title ?? 'MHC Community') }}">
+    <meta property="og:description" content="{{ $ogDescription ?? ($metaDescription ?? 'Mental Health Community Priangan Timur — temukan event dan pendaftaran komunitas.') }}">
+    <meta property="og:image" content="{{ $ogImage ?? asset('images/logo-mhc.jpg') }}">
+    <meta property="og:url" content="{{ $ogUrl ?? url()->current() }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $ogTitle ?? ($title ?? 'MHC Community') }}">
+    <meta name="twitter:description" content="{{ $ogDescription ?? ($metaDescription ?? 'Mental Health Community Priangan Timur — temukan event dan pendaftaran komunitas.') }}">
+    <meta name="twitter:image" content="{{ $ogImage ?? asset('images/logo-mhc.jpg') }}">
+    @stack('meta')
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-[#f7fbfa] text-[#104b68] antialiased">
