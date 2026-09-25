@@ -11,6 +11,8 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class EventAttendancesExport implements FromQuery, ShouldAutoSize, WithHeadings, WithMapping
 {
+    private int $rowNumber = 0;
+
     public function __construct(private readonly Event $event) {}
 
     public function query()
@@ -24,12 +26,13 @@ class EventAttendancesExport implements FromQuery, ShouldAutoSize, WithHeadings,
 
     public function headings(): array
     {
-        return ['Nama', 'Email', 'WhatsApp', 'Kode Registrasi', 'Check-in Pada', 'Metode', 'Admin'];
+        return ['No', 'Nama', 'Email', 'WhatsApp', 'Kode Registrasi', 'Check-in Pada', 'Metode', 'Admin'];
     }
 
     public function map($registration): array
     {
         return [
+            ++$this->rowNumber,
             $registration->name,
             $registration->email,
             $registration->phone,
