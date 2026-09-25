@@ -22,12 +22,43 @@ class RegistrationQrCodeService
 
         $this->drawQrCode($canvas, $registration->registration_code, 30, 20, 360, $black);
 
-        $font = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
-        $boldFont = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
+        // Font chain: Instrument Sans (sesuai web) bundled di repo -> DejaVu bundled -> DejaVu sistem.
+        // Ini menjamin render konsisten antara local & production, tidak tergantung font OS server.
+        $fontCandidates = [
+            'regular' => [
+                resource_path('fonts/InstrumentSans-Variable.ttf'),
+                resource_path('fonts/DejaVuSans.ttf'),
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+            ],
+            'bold' => [
+                resource_path('fonts/InstrumentSans-Variable.ttf'),
+                resource_path('fonts/DejaVuSans-Bold.ttf'),
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+            ],
+        ];
+        $resolveFont = static function (string $weight) use ($fontCandidates): ?string {
+            foreach ($fontCandidates[$weight] ?? [] as $path) {
+                if (is_file($path) && function_exists('imagettfbbox') && @imagettfbbox(12, 0, $path, 'Ag') !== false) {
+                    return $path;
+                }
+            }
+
+            return null;
+        };
+        $font = $resolveFont('regular');
+        $boldFont = $resolveFont('bold') ?? $font;
+
+        // Normalisasi tanda baca "pintar" agar tidak jadi karakter aneh (Ã¢/â)
+        // di server yang font/GD-nya tidak mendukung glyph tersebut.
+        $normalize = static fn (?string $value): string => str_replace(
+            ["\u{201C}", "\u{201D}", "\u{201E}", "\u{2018}", "\u{2019}", "\u{201A}", "\u{00AB}", "\u{00BB}", "\u{2013}", "\u{2014}", "\u{2026}"],
+            ['"', '"', '"', "'", "'", "'", '"', '"', '-', '--', '...'],
+            (string) $value,
+        );
         $drawCentered = function (string $text, int $y, int $size, int $color, bool $bold = false) use ($canvas, $font, $boldFont): void {
             $fontPath = $bold ? $boldFont : $font;
 
-            if (is_file($fontPath) && function_exists('imagettfbbox')) {
+            if (is_string($fontPath) && is_file($fontPath) && function_exists('imagettftext')) {
                 $box = imagettfbbox($size, 0, $fontPath, $text);
                 $width = abs($box[2] - $box[0]);
                 imagettftext($canvas, $size, 0, (int) ((420 - $width) / 2), $y, $color, $fontPath, $text);
@@ -35,12 +66,15 @@ class RegistrationQrCodeService
                 return;
             }
 
-            $width = imagefontwidth(5) * strlen($text);
-            imagestring($canvas, 5, max((420 - $width) / 2, 0), $y - imagefontheight(5), $text, $color);
+            // Fallback Latin-1 agar tidak jadi karakter aneh bila TTF tidak tersedia.
+            $safe = mb_convert_encoding($text, 'ISO-8859-1', 'UTF-8');
+            $width = imagefontwidth(5) * strlen($safe);
+            imagestring($canvas, 5, max((420 - $width) / 2, 0), $y - imagefontheight(5), $safe, $color);
         };
 
         $drawWrapped = function (string $text, int $startY, int $size, int $color, bool $bold = false, int $maxWidth = 380, int $lineHeight = 20, int $maxLines = 3) use ($canvas, $font, $boldFont): int {
             $fontPath = $bold ? $boldFont : $font;
+            $useTtf = is_string($fontPath) && is_file($fontPath) && function_exists('imagettftext');
             $words = preg_split('/\s+/u', trim($text)) ?: [];
             $lines = [];
             $current = '';
@@ -48,11 +82,11 @@ class RegistrationQrCodeService
             foreach ($words as $word) {
                 $candidate = $current === '' ? $word : $current.' '.$word;
 
-                if (is_file($fontPath) && function_exists('imagettfbbox')) {
+                if ($useTtf) {
                     $box = imagettfbbox($size, 0, $fontPath, $candidate);
                     $width = abs($box[2] - $box[0]);
                 } else {
-                    $width = imagefontwidth(5) * strlen($candidate);
+                    $width = imagefontwidth(5) * strlen(mb_convert_encoding($candidate, 'ISO-8859-1', 'UTF-8'));
                 }
 
                 if ($width > $maxWidth && $current !== '') {
@@ -75,12 +109,13 @@ class RegistrationQrCodeService
             $y = $startY;
             foreach ($lines as $line) {
                 $drawLine = $line;
-                if (is_file($fontPath) && function_exists('imagettfbbox')) {
+                if ($useTtf) {
                     $box = imagettfbbox($size, 0, $fontPath, $line);
                     $width = abs($box[2] - $box[0]);
                     imagettftext($canvas, $size, 0, (int) ((420 - $width) / 2), $y, $color, $fontPath, $drawLine);
                 } else {
-                    $width = imagefontwidth(5) * strlen($line);
+                    $safe = mb_convert_encoding($drawLine, 'ISO-8859-1', 'UTF-8');
+                    $width = imagefontwidth(5) * strlen($safe);
                     imagestring($canvas, 5, max((420 - $width) / 2, 0), $y - imagefontheight(5), $drawLine, $color);
                 }
                 $y += $lineHeight;
@@ -90,9 +125,9 @@ class RegistrationQrCodeService
         };
 
         $drawCentered('MHC COMMUNITY', 418, 13, $teal, true);
-        $nameEndY = $drawWrapped(mb_strimwidth($registration->name, 0, 80), 452, 19, $navy, true, 380, 26, 2);
+        $nameEndY = $drawWrapped($normalize(mb_strimwidth($registration->name, 0, 80)), 452, 19, $navy, true, 380, 26, 2);
         $drawCentered('ID: '.$registration->registration_code, $nameEndY + 24, 13, $muted);
-        $drawWrapped($registration->event->name, $nameEndY + 50, 12, $muted, false, 380, 18, 3);
+        $drawWrapped($normalize($registration->event->name), $nameEndY + 50, 12, $muted, false, 380, 18, 3);
 
         ob_start();
         imagepng($canvas);
