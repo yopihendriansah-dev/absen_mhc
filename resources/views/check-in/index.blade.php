@@ -44,6 +44,10 @@
                     <x-heroicon-o-camera class="h-5 w-5" />
                     Mulai kamera
                 </button>
+                <button id="switch-camera" type="button" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#cceae4] bg-white px-4 text-sm font-bold text-[#104b68] transition hover:bg-[#f1faf8] disabled:cursor-not-allowed disabled:opacity-50" disabled>
+                    <x-heroicon-o-arrow-path class="h-5 w-5" />
+                    <span data-camera-label>Ganti kamera</span>
+                </button>
                 <button id="stop-camera" type="button" class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#cceae4] bg-white px-4 text-sm font-bold text-[#104b68] transition hover:bg-[#f1faf8] disabled:cursor-not-allowed disabled:opacity-50" disabled>
                     <x-heroicon-o-x-mark class="h-5 w-5" />
                     Hentikan
@@ -106,10 +110,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const status = document.getElementById('scan-status');
     const cameraStatus = document.getElementById('camera-status');
     const startButton = document.getElementById('start-camera');
+    const switchButton = document.getElementById('switch-camera');
     const stopButton = document.getElementById('stop-camera');
     let scanner = null;
     let isScanning = false;
     let isSubmitting = false;
+    let isProcessingScan = false;
+    let cameras = [];
+    let activeCameraIndex = 0;
 
     const escapeHtml = (value) => String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -173,6 +181,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateControls = () => {
         startButton.disabled = isScanning;
         stopButton.disabled = !isScanning;
+        switchButton.disabled = !isScanning || cameras.length < 2;
+    };
+
+    const updateCameraLabel = () => {
+        const label = switchButton.querySelector('[data-camera-label]');
+        if (label) label.textContent = cameras.length > 1 ? `Ganti kamera (${activeCameraIndex + 1}/${cameras.length})` : 'Ganti kamera';
     };
 
     const showSuccess = (message, participant = null, event = null) => {
@@ -191,14 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, message, 'success');
     };
 
-    const showError = (message, title = 'Check-in gagal') => {
-        showAlert({
-            icon: 'error',
-            title,
-            text: message,
-        }, message, 'error');
-    };
-
     const showWarning = (message, title = 'Periksa kembali') => {
         showAlert({
             icon: 'warning',
@@ -210,9 +216,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopScanner = async () => {
         if (!scanner || !isScanning) return;
         try { await scanner.stop(); } catch (error) { /* Kamera mungkin sudah berhenti */ }
+        try { await scanner.clear(); } catch (error) { /* Abaikan */ }
         isScanning = false;
+        isProcessingScan = false;
         cameraStatus.textContent = 'Kamera dihentikan.';
         updateControls();
+        updateCameraLabel();
+    };
+
+    const closeResultAlert = () => {
+        if (window.Swal && window.Swal.isVisible()) window.Swal.close();
+    };
+
+    const showError = (message, title = 'Check-in gagal') => {
+        showAlert({
+            icon: 'error',
+            title,
+            text: message,
+            confirmButtonText: 'Scan lagi',
+        }, message, 'error');
+    };
+
+    const pauseScannerForResult = () => {
+        // Tahan 1 frame sukses/gagal tanpa mematikan kamera (pause),
+        // jatuh ke stop hanya bila API pause tidak tersedia.
+        if (!scanner || !isScanning) return Promise.resolve(false);
+        try {
+            if (typeof scanner.pause === 'function') {
+                scanner.pause(true);
+                return Promise.resolve(true);
+            }
+        } catch (error) { /* lanjut ke stop */ }
+        return Promise.resolve(false);
+    };
+
+    const resumeScannerAfterResult = async (wasPaused) => {
+        if (!scanner || !isScanning) return;
+        if (wasPaused) {
+            try {
+                if (typeof scanner.resume === 'function') await scanner.resume();
+            } catch (error) { /* Abaikan, scanner tetap jalan */ }
+        }
+        isProcessingScan = false;
+        cameraStatus.textContent = 'Kamera aktif. Arahkan ke QR Code berikutnya.';
     };
 
     const submitCode = async (code, method = 'qr_code') => {
@@ -230,19 +276,58 @@ document.addEventListener('DOMContentLoaded', () => {
             method === 'qr_code' ? 'Memproses QR Code' : 'Memuat data peserta',
             'Sedang mencocokkan data registrasi.'
         );
-        const response = await fetch(@json(route('check-in.store')), {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': @json(csrf_token())},
-            body: JSON.stringify({code: normalizedCode, method})
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.errors?.code?.[0] ?? data.message ?? 'Check-in gagal.');
-        showSuccess(data.message, data.participant, data.event);
+        try {
+            const response = await fetch(@json(route('check-in.store')), {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': @json(csrf_token())},
+                body: JSON.stringify({code: normalizedCode, method})
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.errors?.code?.[0] ?? data.message ?? 'Check-in gagal.');
+            showSuccess(data.message, data.participant, data.event);
+        } catch (error) {
+            showError(error.message ?? 'Check-in gagal.');
+        } finally {
+            isSubmitting = false;
+        }
+        if (method === 'qr_code') {
+            cameraStatus.textContent = 'Siap untuk scan berikutnya. Kamera tetap aktif.';
+            return;
+        }
         cameraStatus.textContent = 'Check-in berhasil. Siap untuk scan berikutnya.';
         isSubmitting = false;
     };
 
-    const startScanner = async (showCameraAlert = true) => {
+    const handleScannedCode = async (text) => {
+        if (isProcessingScan || isSubmitting) return;
+        isProcessingScan = true;
+        const wasPaused = await pauseScannerForResult();
+        cameraStatus.textContent = 'QR terdeteksi. Memproses...';
+        await submitCode(text);
+        // Kamera tetap standby untuk QR berikutnya sampai admin menekan Hentikan.
+        await resumeScannerAfterResult(wasPaused);
+    };
+
+    const loadCameras = async () => {
+        if (typeof Html5Qrcode === 'undefined') return [];
+        try {
+            cameras = await Html5Qrcode.getCameras();
+        } catch (error) {
+            cameras = [];
+        }
+        // Utamakan kamera belakang di Android/iPhone bila labelnya terdeteksi.
+        const backIndex = cameras.findIndex((camera) => /back|rear|belakang|environment|utama/i.test(`${camera.label} ${camera.id}`));
+        if (backIndex > 0) {
+            const [back] = cameras.splice(backIndex, 1);
+            cameras.unshift(back);
+        }
+        if (activeCameraIndex >= cameras.length) activeCameraIndex = 0;
+        updateControls();
+        updateCameraLabel();
+        return cameras;
+    };
+
+    const startScanner = async (showCameraAlert = true, cameraIndex = activeCameraIndex) => {
         if (isScanning) return;
         if (typeof Html5Qrcode === 'undefined') {
             if (showCameraAlert) {
@@ -253,29 +338,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         scanner ??= new Html5Qrcode('reader');
         cameraStatus.textContent = 'Meminta izin kamera...';
+        await loadCameras();
+        const scanConfig = {fps: 10, qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.68);
+            return {width: Math.max(size, 180), height: Math.max(size, 180)};
+        }};
+        const onScanSuccess = async (text) => { await handleScannedCode(text); };
         try {
-            await scanner.start(
-                {facingMode: 'environment'},
-                {fps: 10, qrbox: (viewfinderWidth, viewfinderHeight) => {
-                    const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.68);
-                    return {width: Math.max(size, 180), height: Math.max(size, 180)};
-                }},
-                async (text) => {
-                    await stopScanner();
-                    try { await submitCode(text); } catch (error) { isSubmitting = false; showError(error.message); }
-                },
-                () => {}
-            );
+            if (cameras.length > 0) {
+                activeCameraIndex = Math.min(Math.max(cameraIndex, 0), cameras.length - 1);
+                await scanner.start(cameras[activeCameraIndex].id, scanConfig, onScanSuccess, () => {});
+            } else {
+                // Fallback bila daftar kamera tidak terbaca (umum di iOS sebelum izin diberikan).
+                activeCameraIndex = 0;
+                await scanner.start({facingMode: 'environment'}, scanConfig, onScanSuccess, () => {});
+            }
             isScanning = true;
-            cameraStatus.textContent = 'Kamera aktif. Arahkan ke QR Code peserta.';
+            isProcessingScan = false;
+            const activeLabel = cameras[activeCameraIndex]?.label || 'kamera belakang';
+            cameraStatus.textContent = `Kamera aktif (${activeLabel}). Arahkan ke QR Code peserta.`;
             updateControls();
+            updateCameraLabel();
         } catch (error) {
             cameraStatus.textContent = 'Kamera tidak dapat digunakan.';
             if (showCameraAlert) {
                 showError('Kamera tidak dapat digunakan. Pastikan izin kamera diberikan, lalu gunakan input manual jika diperlukan.', 'Kamera tidak tersedia');
             }
             isScanning = false;
+            isProcessingScan = false;
             updateControls();
+            updateCameraLabel();
+        }
+    };
+
+    const switchCamera = async () => {
+        if (!isScanning || cameras.length < 2 || isProcessingScan) return;
+        const nextIndex = (activeCameraIndex + 1) % cameras.length;
+        cameraStatus.textContent = 'Mengganti kamera...';
+        try {
+            await scanner.stop();
+            isScanning = false;
+            isProcessingScan = false;
+            await startScanner(false, nextIndex);
+        } catch (error) {
+            showError('Gagal mengganti kamera. Coba lagi.', 'Ganti kamera gagal');
+            isScanning = false;
+            updateControls();
+            updateCameraLabel();
         }
     };
 
@@ -295,8 +404,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     startButton.addEventListener('click', () => startScanner(true));
+    switchButton.addEventListener('click', switchCamera);
     stopButton.addEventListener('click', stopScanner);
+    document.addEventListener('keydown', (event) => {
+        // Enter/Spasi saat popup hasil tampil = tutup popup & lanjut scan berikutnya.
+        if ((event.key === 'Enter' || event.key === ' ') && window.Swal && window.Swal.isVisible()) {
+            event.preventDefault();
+            closeResultAlert();
+        }
+    });
     updateControls();
+    updateCameraLabel();
     setTimeout(() => startScanner(false), 300);
 
     @if (session('success'))
