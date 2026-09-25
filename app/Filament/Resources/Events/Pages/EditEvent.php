@@ -11,6 +11,16 @@ class EditEvent extends EditRecord
 {
     protected static string $resource = EventResource::class;
 
+    public function hasCombinedRelationManagerTabsWithContent(): bool
+    {
+        return true;
+    }
+
+    public function getContentTabLabel(): ?string
+    {
+        return 'Detail event';
+    }
+
     protected function getRedirectUrl(): string
     {
         return EventResource::getUrl('index');
