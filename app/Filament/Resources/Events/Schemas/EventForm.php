@@ -80,11 +80,11 @@ class EventForm
                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                     ->columnSpanFull(),
                 SpatieMediaLibraryFileUpload::make('og_image')
-                    ->label('Gambar preview WhatsApp')
-                    ->helperText('Wajib landscape 1200 × 630 px (rasio 1.91:1), JPG/PNG, maks 2 MB. Dipakai khusus preview link WhatsApp/Telegram/FB. Kalau kosong, otomatis pakai poster event.')
+                    ->label('Poster WhatsApp (portrait)')
+                    ->helperText('Rekomendasi portrait 1080 × 1350 px (rasio 4:5, sama seperti poster IG). Minimal 600 × 750 px, JPG/PNG, wajib di bawah 600 KB agar keload di WA. Usahakan teks/judul penting di area tengah agar aman tidak terpotong saat jadi preview link. Kalau kosong, otomatis pakai poster event.')
                     ->collection('event-og-images')
                     ->image()
-                    ->maxSize(2048)
+                    ->maxSize(600)
                     ->acceptedFileTypes(['image/jpeg', 'image/png'])
                     ->columnSpanFull(),
             ]);

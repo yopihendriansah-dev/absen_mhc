@@ -58,7 +58,7 @@
                             <div style="background:#effaf8;border:1px solid #cceae4;border-radius:14px;padding:22px;text-align:center">
                                 <div style="font-size:14px;font-weight:700;color:#174d68">Tunjukkan QR Code ini saat check-in</div>
                                 <p style="margin:5px 0 16px;font-size:13px;color:#5c8593">Simpan email ini dan tunjukkan kode kepada admin di lokasi.</p>
-                                <img src="cid:{{ $qrCodeCid }}" alt="QR Code {{ $registration->registration_code }}" width="360" height="540" style="display:block;width:360px;height:auto;max-width:100%;margin:0 auto;background:#fff">
+                                <img src="cid:{{ $qrCodeCid }}" alt="QR Code {{ $registration->registration_code }}" width="360" height="600" style="display:block;width:360px;height:auto;max-width:100%;margin:0 auto;background:#fff">
                                 <div style="margin-top:14px;font-family:monospace;font-size:14px;letter-spacing:1px;color:#174d68">{{ $registration->registration_code }}</div>
                             </div>
                         </td>
