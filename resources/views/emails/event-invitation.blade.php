@@ -27,7 +27,7 @@
                         <td style="background:#174d68;border-radius:18px 18px 0 0;padding:30px 32px;color:#fff">
                             <div style="font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#72d8c5">Undangan event komunitas</div>
                             <h1 style="margin:12px 0 6px;font-size:30px;line-height:1.2;color:#fff">Hai, {{ $registration->name }}!</h1>
-                            <p style="margin:0;color:#d9f1ed;font-size:15px">Terima kasih sudah mendaftar. Kami menantikan kehadiranmu di event MHC.</p>
+                            <p style="margin:0;color:#d9f1ed;font-size:15px">Terima kasih sudah mendaftar. Kami menantikan kehadiranmu di event {{ $registration->event->name }}.</p>
                         </td>
                     </tr>
                     <tr>
